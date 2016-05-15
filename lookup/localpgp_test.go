@@ -48,6 +48,25 @@ func (s *LocalPGPTest) TestIsMatchFailsWithoutMatches() {
 	s.False(local.isMatch("foo", user))
 }
 
+func (s *LocalPGPTest) TestNewPublicKeyRingFileBasedOnHomeNotGnupgHome() {
+	oldHome := os.Getenv("HOME")
+	defer os.Setenv("HOME", oldHome)
+
+	os.Setenv("HOME", "/this/is/home")
+	os.Unsetenv("GNUPGHOME")
+	keyring := newPublicRingFile()
+
+	s.True(keyring.location == "/this/is/home/.gnupg/pubring.gpg")
+}
+
+func (s *LocalPGPTest) TestNewPublicKeyRingFileBasedOnGnupgHome() {
+	// GNUPGHOME variable includes '.gnupg'
+	os.Setenv("GNUPGHOME", "/gnupghome/.gnupg")
+	keyring := newPublicRingFile()
+
+	s.True(keyring.location == "/gnupghome/.gnupg/pubring.gpg")
+}
+
 func (s *LocalPGPTest) TestGnupgHomeOverride() {
 	os.Setenv("GNUPGHOME", "/foo")
 	_, err := NewLocalPGPService()

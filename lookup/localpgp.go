@@ -19,17 +19,27 @@ import (
 	"golang.org/x/crypto/openpgp"
 )
 
-// LocalPGPService implements the KeyService interface for a local GnuPG
-// public keyring.
-type LocalPGPService struct {
-	ringfile string
-	ring     openpgp.EntityList
+// PublicRingFile structure to encapsulate public key ring file
+type publicRingFile struct {
+	location string
 }
 
-// NewLocalPGPService creates a new LocalPGPService if it finds a local
-// public keyring; otherwise it bails.
-func NewLocalPGPService() (*LocalPGPService, error) {
+// Stat if the file actually exists
+func (p *publicRingFile) Stat() error {
+	info, err := os.Stat(p.location)
+	if err != nil || info.Size() == 0 {
+		return err
+	}
+	return nil
+}
 
+// Open returns a file handle for the public key ring
+func (p *publicRingFile) Open() (*os.File, error) {
+	return os.Open(p.location)
+}
+
+// NewPublicRingFile to derive paths from environment variables
+func newPublicRingFile() *publicRingFile {
 	gnupgHome := path.Join(os.Getenv("HOME"), ".gnupg")
 
 	// Check if an override for GNUPG home is set
@@ -37,14 +47,29 @@ func NewLocalPGPService() (*LocalPGPService, error) {
 		gnupgHome = os.Getenv("GNUPGHOME")
 	}
 
-	ringfile := path.Join(gnupgHome, "pubring.gpg")
+	return &publicRingFile{
+		location: path.Join(gnupgHome, "pubring.gpg"),
+	}
+}
 
-	info, err := os.Stat(ringfile)
-	if err != nil || info.Size() == 0 {
+// LocalPGPService implements the KeyService interface for a local GnuPG
+// public keyring.
+type LocalPGPService struct {
+	ringfile publicRingFile
+	ring     openpgp.EntityList
+}
+
+// NewLocalPGPService creates a new LocalPGPService if it finds a local
+// public keyring; otherwise it bails.
+func NewLocalPGPService() (*LocalPGPService, error) {
+	ringfile := newPublicRingFile()
+
+	err := ringfile.Stat()
+	if err != nil {
 		return nil, err
 	}
 
-	return &LocalPGPService{ringfile: ringfile}, nil
+	return &LocalPGPService{ringfile: *ringfile}, nil
 }
 
 // Ring loads the local public keyring so LocalPGPService can use it later. If
@@ -54,7 +79,7 @@ func (l *LocalPGPService) Ring() openpgp.EntityList {
 		return l.ring
 	}
 
-	reader, err := os.Open(l.ringfile)
+	reader, err := l.ringfile.Open()
 	if err != nil {
 		return nil
 	}
