@@ -20,12 +20,12 @@ import (
 )
 
 // PublicRingFile structure to encapsulate public key ring file
-type PublicRingFile struct {
+type publicRingFile struct {
 	location string
 }
 
 // Stat if the file actually exists
-func (p *PublicRingFile) Stat() error {
+func (p *publicRingFile) Stat() error {
 	info, err := os.Stat(p.location)
 	if err != nil || info.Size() == 0 {
 		return err
@@ -34,12 +34,12 @@ func (p *PublicRingFile) Stat() error {
 }
 
 // Open returns a file handle for the public key ring
-func (p *PublicRingFile) Open() (*os.File, error) {
+func (p *publicRingFile) Open() (*os.File, error) {
 	return os.Open(p.location)
 }
 
 // NewPublicRingFile to derive paths from environment variables
-func NewPublicRingFile() *PublicRingFile {
+func newPublicRingFile() *publicRingFile {
 	gnupgHome := path.Join(os.Getenv("HOME"), ".gnupg")
 
 	// Check if an override for GNUPG home is set
@@ -47,7 +47,7 @@ func NewPublicRingFile() *PublicRingFile {
 		gnupgHome = os.Getenv("GNUPGHOME")
 	}
 
-	return &PublicRingFile{
+	return &publicRingFile{
 		location: path.Join(gnupgHome, "pubring.gpg"),
 	}
 }
@@ -55,14 +55,14 @@ func NewPublicRingFile() *PublicRingFile {
 // LocalPGPService implements the KeyService interface for a local GnuPG
 // public keyring.
 type LocalPGPService struct {
-	ringfile PublicRingFile
+	ringfile publicRingFile
 	ring     openpgp.EntityList
 }
 
 // NewLocalPGPService creates a new LocalPGPService if it finds a local
 // public keyring; otherwise it bails.
 func NewLocalPGPService() (*LocalPGPService, error) {
-	ringfile := NewPublicRingFile()
+	ringfile := newPublicRingFile()
 
 	err := ringfile.Stat()
 	if err != nil {

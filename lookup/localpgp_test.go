@@ -54,7 +54,7 @@ func (s *LocalPGPTest) TestNewPublicKeyRingFileBasedOnHomeNotGnupgHome() {
 
 	os.Setenv("HOME", "/this/is/home")
 	os.Unsetenv("GNUPGHOME")
-	keyring := NewPublicRingFile()
+	keyring := newPublicRingFile()
 
 	s.True(keyring.location == "/this/is/home/.gnupg/pubring.gpg")
 }
@@ -62,7 +62,7 @@ func (s *LocalPGPTest) TestNewPublicKeyRingFileBasedOnHomeNotGnupgHome() {
 func (s *LocalPGPTest) TestNewPublicKeyRingFileBasedOnGnupgHome() {
 	// GNUPGHOME variable includes '.gnupg'
 	os.Setenv("GNUPGHOME", "/gnupghome/.gnupg")
-	keyring := NewPublicRingFile()
+	keyring := newPublicRingFile()
 
 	s.True(keyring.location == "/gnupghome/.gnupg/pubring.gpg")
 }
